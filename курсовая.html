@@ -1,0 +1,1629 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>СтройКальк - Инженерный калькулятор</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            background: #f5f5f5;
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+            background: #fafafa;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 80px;
+            background: #1a1a1a;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 0;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+
+        .nav-button {
+            width: 60px;
+            height: 60px;
+            margin: 10px 0;
+            border: none;
+            background: transparent;
+            color: #888;
+            cursor: pointer;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            gap: 5px;
+        }
+
+            .nav-button:hover {
+                background: #333;
+                color: #fff;
+            }
+
+            .nav-button.active {
+                background: #2563eb;
+                color: white;
+                box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+            }
+
+        .nav-icon {
+            font-size: 24px;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            background: white;
+            padding: 20px 30px;
+            border-bottom: 1px solid #e5e5e5;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+            .header h1 {
+                font-size: 24px;
+                color: #1a1a1a;
+                font-weight: 600;
+            }
+
+        .project-status {
+            display: flex;
+            gap: 20px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #22c55e;
+        }
+
+        .workspace {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Canvas Area */
+        .canvas-container {
+            flex: 1;
+            background: white;
+            margin: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .canvas-header {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+            background: rgba(255,255,255,0.9);
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #666;
+            backdrop-filter: blur(10px);
+        }
+
+        canvas, svg {
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+        }
+
+        /* Control Panel */
+        .control-panel {
+            width: 320px;
+            background: white;
+            border-left: 1px solid #e5e5e5;
+            padding: 25px;
+            overflow-y: auto;
+        }
+
+        .panel-section {
+            margin-bottom: 25px;
+        }
+
+        .panel-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+            .input-group label {
+                display: block;
+                font-size: 13px;
+                color: #666;
+                margin-bottom: 5px;
+            }
+
+            .input-group input {
+                width: 100%;
+                padding: 10px 12px;
+                border: 1px solid #ddd;
+                border-radius: 6px;
+                font-size: 14px;
+                transition: border-color 0.2s;
+            }
+
+                .input-group input:focus {
+                    outline: none;
+                    border-color: #2563eb;
+                }
+
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        /* Results */
+        .results-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 14px;
+        }
+
+            .result-item:last-child {
+                border-bottom: none;
+            }
+
+        .result-value {
+            font-weight: 600;
+            color: #2563eb;
+        }
+
+        .formula {
+            margin-top: 15px;
+            padding: 12px;
+            background: #1e293b;
+            color: #e2e8f0;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        /* Buttons */
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 10px;
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            color: white;
+        }
+
+            .btn-primary:hover {
+                background: #1d4ed8;
+            }
+
+        .btn-secondary {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+            .btn-secondary:hover {
+                background: #e2e8f0;
+            }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        /* Openings List */
+        .openings-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+
+        .opening-item {
+            background: #f8fafc;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            padding: 12px;
+            font-size: 13px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .opening-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .opening-controls {
+            display: flex;
+            gap: 5px;
+        }
+
+        .icon-btn {
+            width: 28px;
+            height: 28px;
+            border: none;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+            .icon-btn:hover {
+                background: #f1f5f9;
+            }
+
+        .opening-dimensions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .dimension-input {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+            .dimension-input label {
+                font-size: 11px;
+                color: #666;
+                .dimension-input input
+
+        {
+            padding: 6px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        /* Grid overlay info */
+        .grid-info {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-family: monospace;
+        }
+
+        /* Roof specific - двойной вид */
+        .roof-views-container {
+            display: grid;
+            grid-template-rows: 1fr 1fr;
+            gap: 15px;
+            height: 100%;
+            padding: 20px;
+        }
+
+        .roof-view-box {
+            background: #f8fafc;
+            border-radius: 8px;
+            border: 2px solid #e2e8f0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .view-label {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: #2563eb;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            z-index: 10;
+        }
+
+        .view-canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Wall tabs */
+        .wall-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .wall-tab {
+            padding: 8px 16px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+            .wall-tab.active {
+                background: #2563eb;
+                color: white;
+                border-color: #2563eb;
+            }
+
+            .wall-tab:hover:not(.active) {
+                background: #f1f5f9;
+            }
+
+        .view-switcher {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 5px;
+            z-index: 10;
+        }
+
+        .view-btn {
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+            .view-btn.active {
+                background: #2563eb;
+                color: white;
+                border-color: #2563eb;
+            }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useCallback } = React;
+
+        // Constants
+        const GRID_SIZE = 20;
+        const CELL_SIZE = 40;
+        const BRICK_WIDTH = 60;
+        const BRICK_HEIGHT = 30;
+
+        // Icons
+        const Icons = {
+            foundation: '▣',
+            walls: '🧱',
+            roof: '🏠',
+            delete: '✕',
+            add: '+',
+            move: '↔',
+            info: 'ℹ'
+        };
+
+        // Foundation Calculator Module
+        const FoundationModule = ({ onUpdate }) => {
+            const canvasRef = useRef(null);
+            const [dimensions, setDimensions] = useState({ width: 0.4, height: 0.5 });
+            const [selectedSegments, setSelectedSegments] = useState(new Set());
+            const [totalLength, setTotalLength] = useState(0);
+            const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+            const [hoverSegment, setHoverSegment] = useState(null);
+
+            const cols = 15;
+            const rows = 12;
+
+            useEffect(() => {
+                drawGrid();
+                calculateMaterials();
+            }, [selectedSegments, dimensions]);
+
+            const drawGrid = () => {
+                const canvas = canvasRef.current;
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
+                const width = canvas.width = canvas.offsetWidth;
+                const height = canvas.height = canvas.offsetHeight;
+
+                ctx.clearRect(0, 0, width, height);
+
+                const offsetX = (width - cols * CELL_SIZE) / 2;
+                const offsetY = (height - rows * CELL_SIZE) / 2;
+
+                ctx.fillStyle = '#fafafa';
+                ctx.fillRect(0, 0, width, height);
+
+                ctx.strokeStyle = '#e2e8f0';
+                ctx.lineWidth = 1;
+
+                for (let i = 0; i <= cols; i++) {
+                    const x = offsetX + i * CELL_SIZE;
+                    ctx.beginPath();
+                    ctx.moveTo(x, offsetY);
+                    ctx.lineTo(x, offsetY + rows * CELL_SIZE);
+                    ctx.stroke();
+                }
+
+                for (let i = 0; i <= rows; i++) {
+                    const y = offsetY + i * CELL_SIZE;
+                    ctx.beginPath();
+                    ctx.moveTo(offsetX, y);
+                    ctx.lineTo(offsetX + cols * CELL_SIZE, y);
+                    ctx.stroke();
+                }
+
+                ctx.strokeStyle = '#dc2626';
+                ctx.lineWidth = 6;
+                ctx.lineCap = 'round';
+
+                selectedSegments.forEach(key => {
+                    const [type, i, j] = key.split('-');
+                    if (type === 'v') {
+                        const x = offsetX + parseInt(i) * CELL_SIZE;
+                        const y1 = offsetY + parseInt(j) * CELL_SIZE;
+                        const y2 = y1 + CELL_SIZE;
+                        ctx.beginPath();
+                        ctx.moveTo(x, y1);
+                        ctx.lineTo(x, y2);
+                        ctx.stroke();
+                    } else {
+                        const y = offsetY + parseInt(j) * CELL_SIZE;
+                        const x1 = offsetX + parseInt(i) * CELL_SIZE;
+                        const x2 = x1 + CELL_SIZE;
+                        ctx.beginPath();
+                        ctx.moveTo(x1, y);
+                        ctx.lineTo(x2, y);
+                        ctx.stroke();
+                    }
+                });
+
+                if (hoverSegment) {
+                    ctx.strokeStyle = 'rgba(220, 38, 38, 0.4)';
+                    ctx.lineWidth = 6;
+                    ctx.lineCap = 'round';
+
+                    const [type, i, j] = hoverSegment.split('-');
+                    if (type === 'v') {
+                        const x = offsetX + parseInt(i) * CELL_SIZE;
+                        const y1 = offsetY + parseInt(j) * CELL_SIZE;
+                        const y2 = y1 + CELL_SIZE;
+                        ctx.beginPath();
+                        ctx.moveTo(x, y1);
+                        ctx.lineTo(x, y2);
+                        ctx.stroke();
+                    } else {
+                        const y = offsetY + parseInt(j) * CELL_SIZE;
+                        const x1 = offsetX + parseInt(i) * CELL_SIZE;
+                        const x2 = x1 + CELL_SIZE;
+                        ctx.beginPath();
+                        ctx.moveTo(x1, y);
+                        ctx.lineTo(x2, y);
+                        ctx.stroke();
+                    }
+                }
+
+                ctx.fillStyle = '#94a3b8';
+                for (let i = 0; i <= cols; i++) {
+                    for (let j = 0; j <= rows; j++) {
+                        const x = offsetX + i * CELL_SIZE;
+                        const y = offsetY + j * CELL_SIZE;
+                        ctx.beginPath();
+                        ctx.arc(x, y, 3, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+            };
+
+            const getSegmentFromPos = (x, y) => {
+                const canvas = canvasRef.current;
+                const width = canvas.offsetWidth;
+                const height = canvas.offsetHeight;
+                const offsetX = (width - cols * CELL_SIZE) / 2;
+                const offsetY = (height - rows * CELL_SIZE) / 2;
+
+                if (x < offsetX - 10 || x > offsetX + cols * CELL_SIZE + 10 ||
+                    y < offsetY - 10 || y > offsetY + rows * CELL_SIZE + 10) {
+                    return null;
+                }
+
+                const col = Math.round((x - offsetX) / CELL_SIZE);
+                const row = Math.round((y - offsetY) / CELL_SIZE);
+
+                const vx = offsetX + col * CELL_SIZE;
+                const vy = offsetY + row * CELL_SIZE;
+
+                if (col >= 0 && col <= cols && row > 0 && row <= rows) {
+                    const distToV = Math.abs(x - vx);
+                    if (distToV < 10 && y >= offsetY + (row-1) * CELL_SIZE && y <= offsetY + row * CELL_SIZE) {
+                        return `v-${col}-${row-1}`;
+                    }
+                }
+
+                if (row >= 0 && row <= rows && col > 0 && col <= cols)
+                {
+                    const distToH = Math.abs(y - vy);
+                    if (distToH < 10 && x >= offsetX + (col-1) * CELL_SIZE && x <= offsetX + col * CELL_SIZE) {
+                        return `h-${col-1}-${row}`;
+                    }
+                }
+
+                return null;
+            };
+
+            const handleMouseMove = (e) => {
+                const rect = canvasRef.current.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                setMousePos({ x, y });
+
+                const segment = getSegmentFromPos(x, y);
+                setHoverSegment(segment);
+                drawGrid();
+            };
+
+            const handleClick = (e) => {
+                const rect = canvasRef.current.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                const segment = getSegmentFromPos(x, y);
+                if (segment) {
+                    const newSelected = new Set(selectedSegments);
+                    if (newSelected.has(segment)) {
+                        newSelected.delete(segment);
+                    } else {
+                        newSelected.add(segment);
+                    }
+                    setSelectedSegments(newSelected);
+                    setTotalLength(newSelected.size * 0.5);
+                }
+            };
+
+            const calculateMaterials = () => {
+                const V = totalLength * dimensions.width * dimensions.height;
+                const cement = V * 0.4;
+                const sand = V * 0.6;
+                const gravel = V * 0.8;
+
+                onUpdate({ length: totalLength, volume: V, cement, sand, gravel });
+            };
+
+            return (
+                <div className="workspace">
+                    <div className="canvas-container">
+                        <div className="canvas-header">
+                            Кликайте по сегментам сетки (сторонам квадратов)
+                        </div>
+                        <canvas
+                            ref={canvasRef}
+                            onClick={handleClick}
+                            onMouseMove={handleMouseMove}
+                            onMouseLeave={() => { setHoverSegment(null); drawGrid(); }}
+                        />
+                        <div className="grid-info">
+                            Сегментов: {selectedSegments.size} | Длина: {totalLength.toFixed(1)} м
+                        </div>
+                    </div>
+
+                    <div className="control-panel">
+                        <div className="panel-section">
+                            <div className="panel-title">Параметры фундамента</div>
+                            <div className="input-row">
+                                <div className="input-group">
+                                    <label>Ширина (м)</label>
+                                    <input
+                                        type="number"
+                                        step="0.1"
+                                        value={dimensions.width}
+                                        onChange={(e) => setDimensions({...dimensions, width: parseFloat(e.target.value) || 0})}
+                                    />
+                                </div>
+                                <div className="input-group">
+                                    <label>Высота (м)</label>
+                                    <input
+                                        type="number"
+                                        step="0.1"
+                                        value={dimensions.height}
+                                        onChange={(e) => setDimensions({...dimensions, height: parseFloat(e.target.value) || 0})}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="panel-section">
+                            <div className="panel-title">Результаты расчета</div>
+                            <div className="results-box">
+                                <div className="result-item">
+                                    <span>Объем бетона:</span>
+                                    <span className="result-value">{(totalLength * dimensions.width * dimensions.height).toFixed(2)} м³</span>
+                                </div>
+                                <div className="result-item">
+                                    <span>Цемент М400:</span>
+                                    <span className="result-value">{(totalLength * dimensions.width * dimensions.height * 0.4).toFixed(0)} кг</span>
+                                </div>
+                                <div className="result-item">
+                                    <span>Песок:</span>
+                                    <span className="result-value">{(totalLength * dimensions.width * dimensions.height * 0.6).toFixed(2)} м³</span>
+                                </div>
+                                <div className="result-item">
+                                    <span>Щебень:</span>
+                                    <span className="result-value">{(totalLength * dimensions.width * dimensions.height * 0.8).toFixed(2)} м³</span>
+                                </div>
+                            </div>
+
+                            <div className="formula">
+                                V = L × W × H<br/>
+                                V = {totalLength.toFixed(1)} × {dimensions.width} × {dimensions.height}<br/>
+                                V = {(totalLength * dimensions.width * dimensions.height).toFixed(2)} м³<br/><br/>
+                                Пропорции М300:<br/>
+                                1ц : 1.5п : 3щ
+                            </div>
+                        </div>
+
+                        <button className="btn btn-secondary" onClick={() => { setSelectedSegments(new Set()); setTotalLength(0); }}>
+                            Сбросить выбор
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        // Walls Module
+        const WallsModule = () => {
+            const svgRef = useRef(null);
+            const [walls, setWalls] = useState([{ id: 1, width: 6, height: 3, openings: [] }]);
+            const [activeWall, setActiveWall] = useState(0);
+            const [brickSize, setBrickSize] = useState({ w: 0.25, h: 0.12, d: 0.065 });
+            const [mortar, setMortar] = useState(0.01);
+            const [dragging, setDragging] = useState(null);
+
+            const addWall = () => {
+                const newId = walls.length + 1;
+                setWalls([...walls, { id: newId, width: 6, height: 3, openings: [] }]);
+                setActiveWall(walls.length);
+            };
+
+            const addOpening = (type) => {
+                const newWalls = [...walls];
+                newWalls[activeWall].openings.push({
+                    id: Date.now(),
+                    type,
+                    x: 1,
+                    y: type === 'window' ? 1 : 0,
+                    width: type === 'window' ? 1.2 : 0.9,
+                    height: type === 'window' ? 1.4 : 2.1
+                });
+                setWalls(newWalls);
+            };
+
+            const removeOpening = (id) => {
+                const newWalls = [...walls];
+                newWalls[activeWall].openings = newWalls[activeWall].openings.filter(o => o.id !== id);
+                setWalls(newWalls);
+            };
+
+            const updateOpening = (id, field, value) => {
+                const newWalls = [...walls];
+                const opening = newWalls[activeWall].openings.find(o => o.id === id);
+                if (opening) {
+                    opening[field] = parseFloat(value) || 0;
+                    if (field === 'x' && opening.x + opening.width > currentWall.width) {
+                        opening.x = Math.max(0, currentWall.width - opening.width);
+                    }
+                    if (field === 'y' && opening.y + opening.height > currentWall.height) {
+                        opening.y = Math.max(0, currentWall.height - opening.height);
+                    }
+                }
+                setWalls(newWalls);
+            };
+
+            const handleMouseDown = (e, openingId) => {
+                e.stopPropagation();
+                setDragging(openingId);
+            };
+
+            const handleMouseMove = (e) => {
+                if (dragging === null) return;
+
+                const rect = svgRef.current.getBoundingClientRect();
+                const scaleX = currentWall.width / rect.width;
+                const scaleY = currentWall.height / rect.height;
+
+                const newX = (e.clientX - rect.left) * scaleX;
+                const newY = (e.clientY - rect.top) * scaleY;
+
+                const newWalls = [...walls];
+                const opening = newWalls[activeWall].openings.find(o => o.id === dragging);
+                if (opening) {
+                    opening.x = Math.max(0, Math.min(newX - opening.width/2, currentWall.width - opening.width));
+                    opening.y = Math.max(0, Math.min(newY - opening.height/2, currentWall.height - opening.height));
+                }
+                setWalls(newWalls);
+            };
+
+            const handleMouseUp = () => {
+                setDragging(null);
+            };
+
+            const calculateBricks = (wall) => {
+                const brickW = brickSize.w + mortar;
+                const brickH = brickSize.h + mortar;
+                const wallArea = wall.width * wall.height;
+                const openingArea = wall.openings.reduce((sum, o) => sum + o.width * o.height, 0);
+                const netArea = wallArea - openingArea;
+                const brickArea = brickW * brickH;
+                return Math.ceil(netArea / brickArea);
+            };
+
+            const currentWall = walls[activeWall];
+            const brickCount = calculateBricks(currentWall);
+
+            return (
+                <div className="workspace">
+                    <div className="canvas-container">
+                                <svg
+                            ref={svgRef}
+                            viewBox={`0 0 ${currentWall.width} ${currentWall.height}`}
+                            preserveAspectRatio="xMidYMid meet"
+                            onMouseMove={handleMouseMove}
+                            onMouseUp={handleMouseUp}
+                            onMouseLeave={handleMouseUp}
+                            style={{ cursor: dragging !== null ? 'grabbing' : 'default' }}
+                        >
+                            {/* Brick pattern */}
+                            {Array.from({ length: Math.ceil(currentWall.height / (brickSize.h + mortar)) }).map((_, row) => (
+                                Array.from({ length: Math.ceil(currentWall.width / (brickSize.w + mortar)) }).map((_, col) => {
+                                    const x = col * (brickSize.w + mortar) + (row % 2) * (brickSize.w + mortar) / 2;
+                                    const y = row * (brickSize.h + mortar);
+
+                                    const isInOpening = currentWall.openings.some(o =>
+                                        x + brickSize.w > o.x && x < o.x + o.width &&
+                                        y + brickSize.h > o.y && y < o.y + o.height
+                                    );
+
+                                    if (isInOpening) return null;
+
+                                    return (
+                                        <rect
+                                            key={`${row}-${col}`}
+                                            x={x}
+                                            y={y}
+                                            width={brickSize.w}
+                                            height={brickSize.h}
+                                            fill="#c2410c"
+                                            stroke="#9a3412"
+                                            strokeWidth="0.002"
+                                        />
+                                    );
+                                })
+                            ))}
+
+                            {/* Openings */}
+                            {currentWall.openings.map(opening => (
+                                <g key={opening.id}>
+                                    <rect
+                                        x={opening.x}
+                                        y={opening.y}
+                                        width={opening.width}
+                                        height={opening.height}
+                                        fill="rgba(100, 149, 237, 0.3)"
+                                        stroke="#2563eb"
+                                        strokeWidth="0.02"
+                                        strokeDasharray="0.05,0.05"
+                                        onMouseDown={(e) => handleMouseDown(e, opening.id)}
+                                        style={{ cursor: 'move' }}
+                                    />
+                                    <text
+                                        x={opening.x + opening.width/2}
+                                        y={opening.y + opening.height/2}
+                                        textAnchor="middle"
+                                        dominantBaseline="middle"
+                                        fill="#1e3a8a"
+                                        fontSize="0.12"
+                                        fontWeight="bold"
+                                        pointerEvents="none"
+                                    >
+                                        {opening.type === 'window' ? 'ОКНО' : 'ДВЕРЬ'}
+                                    </text>
+                                    <text
+                                        x={opening.x + opening.width/2}
+                                        y={opening.y + opening.height/2 + 0.15}
+                                        textAnchor="middle"
+                                        dominantBaseline="middle"
+                                        fill="#1e3a8a"
+                                        fontSize="0.08"
+                                        pointerEvents="none"
+                                    >
+                                        {opening.width.toFixed(2)}×{opening.height.toFixed(2)}м
+                                    </text>
+                                </g>
+                            ))}
+                        </svg>
+                    </div>
+
+                    <div className="control-panel">
+                        <div className="panel-section">
+                            <div className="panel-title">Стены проекта</div>
+                            <div className="wall-tabs">
+                                {walls.map((wall, idx) => (
+                                    <button
+                                        key={wall.id}
+                                        className={`wall-tab ${activeWall === idx ? 'active' : ''}`}
+                                        onClick={() => setActiveWall(idx)}
+                                    >
+                                        Стена {wall.id}
+                                    </button>
+                                ))}
+                                <button className="wall-tab" onClick={addWall}>+</button>
+                            </div>
+                        </div>
+
+                        <div className="panel-section">
+                            <div className="panel-title">Размеры стены</div>
+                            <div className="input-row">
+                                <div className="input-group">
+                                    <label>Ширина (м)</label>
+                                    <input
+                                        type="number"
+                                        step="0.1"
+                                        value={currentWall.width}
+                                        onChange={(e) => {
+                                            const newWalls = [...walls];
+                                            newWalls[activeWall].width = parseFloat(e.target.value) || 0;
+                                            setWalls(newWalls);
+                                        }}
+                                    />
+                                </div>
+                                <div className="input-group">
+                                    <label>Высота (м)</label>
+                                    <input
+                                        type="number"
+                                        step="0.1"
+                                        value={currentWall.height}
+                                        onChange={(e) => {
+                                            const newWalls = [...walls];
+                                            newWalls[activeWall].height = parseFloat(e.target.value) || 0;
+                                            setWalls(newWalls);
+                                        }}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="panel-section">
+                            <div className="panel-title">Параметры кирпича</div>
+                            <div className="input-row">
+                                <div className="input-group">
+                                    <label>Длина (м)</label>
+                                    <input
+                                        type="number"
+                                        step="0.001"
+                                        value={brickSize.w}
+                                        onChange={(e) => setBrickSize({...brickSize, w: parseFloat(e.target.value) || 0})}
+                                    />
+                                </div>
+                                <div className="input-group">
+                                    <label>Высота (м)</label>
+                                    <input
+                                        type="number"
+                                        step="0.001"
+                                        value={brickSize.h}
+                                        onChange={(e) => setBrickSize({...brickSize, h: parseFloat(e.target.value) || 0})}
+                                    />
+                                </div>
+                            </div>
+                            <div className="input-group">
+                                <label>Толщина шва (м)</label>
+                                <input
+                                    type="number"
+                                    step="0.001"
+                                    value={mortar}
+                                    onChange={(e) => setMortar(parseFloat(e.target.value) || 0)}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="panel-section">
+                            <div className="panel-title">Проемы</div>
+                            <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                                <button className="btn btn-secondary" onClick={() => addOpening('window')}>
+                                    + Окно
+                                </button>
+                                <button className="btn btn-secondary" onClick={() => addOpening('door')}>
+                                    + Дверь
+                                </button>
+                            </div>
+
+                            <div className="openings-list">
+                                {currentWall.openings.map(opening => (
+                                    <div key={opening.id} className="opening-item">
+                                        <div className="opening-header">
+                                            <span>{opening.type === 'window' ? 'Окно' : 'Дверь'}</span>
+                                            <button className="icon-btn btn-danger" onClick={() => removeOpening(opening.id)}>
+                                                {Icons.delete}
+                                            </button>
+                                        </div>
+                                        <div className="opening-dimensions">
+                                            <div className="dimension-input">
+                                                <label>Ширина (м)</label>
+                                                <input
+                                                    type="number"
+                                                    step="0.1"
+                                                    value={opening.width}
+                                                    onChange={(e) => updateOpening(opening.id, 'width', e.target.value)}
+                                                />
+                                            </div>
+                                            <div className="dimension-input">
+                                                <label>Высота (м)</label>
+                                                <input
+                                                    type="number"
+                                                    step="0.1"
+                                                    value={opening.height}
+                                                    onChange={(e) => updateOpening(opening.id, 'height', e.target.value)}
+                                                />
+                                            </div>
+                                            <div className="dimension-input">
+                                                <label>X (м)</label>
+                                                <input
+                                                    type="number"
+                                                    step="0.1"
+                                                    value={opening.x.toFixed(2)}
+                                                    onChange={(e) => updateOpening(opening.id, 'x', e.target.value)}
+                                                />
+                                            </div>
+                                            <div className="dimension-input">
+                                                <label>Y (м)</label>
+                                                <input
+                                                    type="number"
+                                                    step="0.1"
+                                                    value={opening.y.toFixed(2)}
+                                                    onChange={(e) => updateOpening(opening.id, 'y', e.target.value)}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="panel-section">
+                            <div className="panel-title">Расчет материалов</div>
+                            <div className="results-box">
+                                <div className="result-item">
+                                    <span>Количество кирпичей:</span>
+                                    <span className="result-value">{brickCount} шт</span>
+                                </div>
+                                <div className="result-item">
+                                    <span>Объем кладки:</span>
+                                    <span className="result-value">
+                                        {(currentWall.width * currentWall.height * brickSize.d).toFixed(2)} м³
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // Roof Module с видом сверху и сбоку
+        const RoofModule = ({ foundationData }) => {
+            const sideViewRef = useRef(null);
+            const topViewRef = useRef(null);
+            const [width, setWidth] = useState(foundationData?.length || 10);
+            const [depth, setDepth] = useState(6);
+            const [height, setHeight] = useState(2.5);
+            const [overhang, setOverhang] = useState(0.5);
+            const [draggingPoint, setDraggingPoint] = useState(null);
+            const [draggingTopPoint, setDraggingTopPoint] = useState(null);
+            const [rafterSpacing, setRafterSpacing] = useState(0.6);
+            const [boardSection, setBoardSection] = useState({ w: 0.15, h: 0.05 });
+
+            // Точки для вида сверху (план крыши)
+            const [topPoints, setTopPoints] = useState([
+                { id: 1, x: 0, z: 0 },           // левый нижний
+                { id: 2, x: 1, z: 0 },           // правый нижний
+                { id: 3, x: 1, z: 1 },           // правый верхний
+                { id: 4, x: 0, z: 1 }            // левый верхний
+            ]);
+
+            useEffect(() => {
+                if (foundationData?.length) {
+                    setWidth(foundationData.length);
+                }
+            }, [foundationData]);
+
+            // Расчет углов ската
+            const calculateAngles = () => {
+                const slopeLength = Math.sqrt(Math.pow(depth/2, 2) + Math.pow(height, 2));
+                const angle = Math.atan2(height, depth/2) * 180 / Math.PI;
+                return { slopeLength, angle: Math.round(angle) };
+            };
+
+            const drawSideView = () => {
+                const canvas = sideViewRef.current;
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
+                const w = canvas.width = canvas.offsetWidth;
+                const h = canvas.height = canvas.offsetHeight;
+
+                ctx.clearRect(0, 0, w, h);
+
+                const padding = 50;
+                const roofW = w - padding * 2;
+                const groundY = h - padding;
+                const wallHeight = 40;
+
+                // Фон
+                ctx.fillStyle = '#f8fafc';
+                ctx.fillRect(0, 0, w, h);
+
+                // Земля
+                ctx.strokeStyle = '#94a3b8';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(padding, groundY);
+                ctx.lineTo(w - padding, groundY);
+                ctx.stroke();
+
+                // Стены
+                ctx.fillStyle = '#cbd5e1';
+                ctx.fillRect(padding, groundY - wallHeight, roofW, wallHeight);
+                ctx.strokeStyle = '#64748b';
+                ctx.strokeRect(padding, groundY - wallHeight, roofW, wallHeight);
+
+                // Точки крыши (вид сбоку - треугольник)
+                const roofPoints = [
+                    { x: padding - overhang * (roofW/width), y: groundY - wallHeight }, // левый карниз
+                    { x: padding + roofW * 0.25, y: groundY - wallHeight - height * 15 }, // левая точка
+                    { x: padding + roofW * 0.5, y: groundY - wallHeight - height * 20 }, // конек
+                    { x: padding + roofW * 0.75, y: groundY - wallHeight - height * 15 }, // правая точка
+                    { x: w - padding + overhang * (roofW/width), y: groundY - wallHeight } // правый карниз
+                ];
+
+                // Рисуем скаты
+                ctx.fillStyle = 'rgba(37, 99, 235, 0.1)';
+                ctx.strokeStyle = '#2563eb';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(roofPoints[0].x, roofPoints[0].y);
+                roofPoints.forEach(p => ctx.lineTo(p.x, p.y));
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                // Контрольные точки (красные)
+                const controlPoints = [
+                    { x: roofPoints[2].x, y: roofPoints[2].y, id: 'center', label: 'Конек' }
+                ];
+
+                controlPoints.forEach(point => {
+                    // Точка
+                    ctx.fillStyle = '#dc2626';
+                    ctx.beginPath();
+                    ctx.arc(point.x, point.y, 8, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.strokeStyle = 'white';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    // Подпись
+                    ctx.fillStyle = '#1e293b';
+                    ctx.font = 'bold 12px sans-serif';
+                    ctx.fillText(point.label, point.x + 12, point.y - 12);
+                    ctx.fillText(`h=${height}м`, point.x + 12, point.y + 5);
+                });
+
+                // Углы наклона
+                const { angle } = calculateAngles();
+                ctx.fillStyle = '#059669';
+                ctx.font = 'bold 14px sans-serif';
+                ctx.fillText(`Угол ската: ${angle}°`, padding, 30);
+
+                // Размеры
+                ctx.fillStyle = '#64748b';
+                ctx.font = '12px sans-serif';
+                ctx.fillText(`${width}м`, w/2 - 15, h - 20);
+            };
+
+            const drawTopView = () => {
+                const canvas = topViewRef.current;
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
+                const w = canvas.width = canvas.offsetWidth;
+                const h = canvas.height = canvas.offsetHeight;
+
+                ctx.clearRect(0, 0, w, h);
+
+                const padding = 60;
+                const scaleX = (w - padding * 2) / width;
+                const scaleZ = (h - padding * 2) / depth;
+                const scale = Math.min(scaleX, scaleZ);
+
+                const offsetX = (w - width * scale) / 2;
+                const offsetZ = (h - depth * scale) / 2;
+
+                // Фон
+                ctx.fillStyle = '#f8fafc';
+                ctx.fillRect(0, 0, w, h);
+
+                // Сетка
+                ctx.strokeStyle = '#e2e8f0';
+                ctx.lineWidth = 1;
+                const gridSize = 1 * scale;
+
+                for (let x = 0; x <= width; x++) {
+                    const px = offsetX + x * scale;
+                    ctx.beginPath();
+                    ctx.moveTo(px, offsetZ);
+                    ctx.lineTo(px, offsetZ + depth * scale);
+                    ctx.stroke();
+                }
+
+                for (let z = 0; z <= depth; z++) {
+                    const pz = offsetZ + z * scale;
+                    ctx.beginPath();
+                    ctx.moveTo(offsetX, pz);
+                    ctx.lineTo(offsetX + width * scale, pz);
+                    ctx.stroke();
+                }
+
+                // План крыши (свесы)
+                const overhangScale = overhang * scale;
+                ctx.fillStyle = 'rgba(37, 99, 235, 0.15)';
+                ctx.strokeStyle = '#2563eb';
+                ctx.lineWidth = 2;
+
+                ctx.beginPath();
+                ctx.moveTo(offsetX - overhangScale, offsetZ - overhangScale);
+                ctx.lineTo(offsetX + width * scale + overhangScale, offsetZ - overhangScale);
+                ctx.lineTo(offsetX + width * scale + overhangScale, offsetZ + depth * scale + overhangScale);
+                ctx.lineTo(offsetX - overhangScale, offsetZ + depth * scale + overhangScale);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                // Контур здания
+                ctx.strokeStyle = '#64748b';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(offsetX, offsetZ, width * scale, depth * scale);
+
+                // Линия конька (по центру)
+                ctx.strokeStyle = '#dc2626';
+                ctx.setLineDash([5, 5]);
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(offsetX, offsetZ + depth * scale / 2);
+                ctx.lineTo(offsetX + width * scale, offsetZ + depth * scale / 2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // Контрольные точки на плане (для изменения формы)
+                const points = [
+                    { x: offsetX, z: offsetZ + depth * scale / 2, id: 'left', label: 'Л' },
+                    { x: offsetX + width * scale, z: offsetZ + depth * scale / 2, id: 'right', label: 'П' }
+                ];
+
+                points.forEach(point => {
+                    ctx.fillStyle = '#dc2626';
+                    ctx.beginPath();
+                    ctx.arc(point.x, point.z, 8, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.strokeStyle = 'white';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    ctx.fillStyle = 'white';
+                    ctx.font = 'bold 10px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(point.label, point.x, point.z + 3);
+                });
+
+                // Подписи размеров
+                ctx.fillStyle = '#1e293b';
+                ctx.font = '12px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(`${width}м`, offsetX + width * scale / 2, h - 20);
+
+                ctx.save();
+                ctx.translate(20, offsetZ + depth * scale / 2);
+                ctx.rotate(-Math.PI / 2);
+                ctx.fillText(`${depth}м`, 0, 0);
+                ctx.restore();
+
+                // Легенда
+                ctx.fillStyle = '#64748b';
+                ctx.font = '11px sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText('Красная линия - конек', padding, 25);
+                ctx.fillText('Синий контур - свесы крыши', padding, 40);
+            };
+
+            useEffect(() => {
+                drawSideView();
+                drawTopView();
+            }, [width, depth, height, overhang]);
+
+            const handleSideMouseDown = (e) => {
+                const rect = sideViewRef.current.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                const padding = 50;
+                const roofW = rect.width - padding * 2;
+                const centerX = padding + roofW * 0.5;
+                const groundY = rect.height - padding;
+                const wallHeight = 40;
+                const centerY = groundY - wallHeight - height * 20;
+
+                const dist = Math.sqrt((x - centerX)**2 + (y - centerY)**2);
+                if (dist < 15) {
+                    setDraggingPoint('center');
+                }
+            };
+
+            const handleSideMouseMove = (e) => {
+                if (!draggingPoint) return;
+
+                const rect = sideViewRef.current.getBoundingClientRect();
+                const y = e.clientY - rect.top;
+
+                const padding = 50;
+                const groundY = rect.height - padding;
+                const wallHeight = 40;
+                const maxH = (groundY - wallHeight - y) / 20;
+
+                setHeight(Math.max(0.5, Math.min(5, maxH)));
+            };
+
+            const handleTopMouseDown = (e) => {
+                const rect = topViewRef.current.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                const padding = 60;
+                const scale = Math.min((rect.width - padding * 2) / width, (rect.height - padding * 2) / depth);
+                const offsetX = (rect.width - width * scale) / 2;
+                const offsetZ = (rect.height - depth * scale) / 2;
+
+                // Проверяем точки
+                const leftX = offsetX;
+                const rightX = offsetX + width * scale;
+                const centerZ = offsetZ + depth * scale / 2;
+
+                const distLeft = Math.sqrt((x - leftX)**2 + (y - centerZ)**2);
+                const distRight = Math.sqrt((x - rightX)**2 + (y - centerZ)**2);
+
+                if (distLeft < 15) {
+                    setDraggingTopPoint('left');
+                } else if (distRight < 15) {
+                    setDraggingTopPoint('right');
+                }
+            };
+
+            const handleTopMouseMove = (e) => {
+                if (!draggingTopPoint) return;
+
+                const rect = topViewRef.current.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+
+                const padding = 60;
+                const scale = Math.min((rect.width - padding * 2) / width, (rect.height - padding * 2) / depth);
+                const offsetX = (rect.width - width * scale) / 2;
+
+                if (draggingTopPoint === 'left') {
+                    const newWidth = width - (x - offsetX) / scale;
+                    if (newWidth > 3 && newWidth < 20) {
+                        setWidth(newWidth);
+                    }
+                } else if (draggingTopPoint === 'right') {
+                    const newWidth = (x - offsetX) / scale;
+                    if (newWidth > 3 && newWidth < 20) {
+                        setWidth(newWidth);
+                    }
+                }
+            };
+
+            const handleMouseUp = () => {
+                setDraggingPoint(null);
+                setDraggingTopPoint(null);
+            };
+
+            const calculateRoofArea = () => {
+                const { slopeLength } = calculateAngles();
+                const effectiveWidth = width + overhang * 2;
+                const effectiveDepth = depth + overhang * 2;
+                return effectiveWidth * slopeLength * 2;
+            };
+
+            const calculateRafters = () => {
+                const { slopeLength } = calculateAngles();
+                const count = Math.ceil(width / rafterSpacing) + 1;
+                const volume = count * slopeLength * boardSection.w * boardSection.h;
+                return { count, volume, slopeLength };
+            };
+
+            const rafters = calculateRafters();
+            const roofArea = calculateRoofArea();
+            const { angle } = calculateAngles();
+
+            return (
+                <div className="workspace">
+                    <div className="canvas-container">
+                        <div className="roof-views-container">
+                            <div className="roof-view-box">
+                                <div className="view-label">Вид сверху (план)</div>
+                                <canvas
+                                    ref={topViewRef}
+                                    className="view-canvas"
+                                    onMouseDown={handleTopMouseDown}
+                                    onMouseMove={handleTopMouseMove}
+                                    onMouseUp={handleMouseUp}
+                                    onMouseLeave={handleMouseUp}
+                                    style={{ cursor: draggingTopPoint ? 'ew-resize' : 'default' }}
+                                />
+                            </div>
+                            <div className="roof-view-box">
+                                <div className="view-label">Вид сбоку (фасад)</div>
+                                <canvas
+                                    ref={sideViewRef}
+                                    className="view-canvas"
+                                    onMouseDown={handleSideMouseDown}
+                                    onMouseMove={handleSideMouseMove}
+                                    onMouseUp={handleMouseUp}
+                                    onMouseLeave={handleMouseUp}
+                                    style={{ cursor: draggingPoint ? 'ns-resize' : 'default' }}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="control-panel">
+                        <div className="panel-section">
+                            <div className="panel-title">Габариты крыши</div>
+                            <div className="input-row">
+                                <div className="input-group">
+                                    <label>Ширина (м)</label>
+                                    <input
+                                        type="number"
+                                        step="0.1"
+                                        value={width.toFixed(1)}
+                                        onChange={(e) => setWidth(parseFloat(e.target.value) || 0)}
+                                    />
+                                </div>
+                                <div className="input-group">
+                                    <label>Глубина (м)</label>
+                                    <input
+                                        type="number"
+                                        step="0.1"
+                                        value={depth}
+                                        onChange={(e) => setDepth(parseFloat(e.target.value) || 0)}
+                                    />
+                                </div>
+                            </div>
+                            <div className="input-row">
+                                <div className="input-group">
+                                    <label>Высота конька (м)</label>
+                                    <input
+                                        type="number"
+                                        step="0.1"
+                                        value={height}
+                                        onChange={(e) => setHeight(parseFloat(e.target.value) || 0)}
+                                    />
+                                </div>
+                                <div className="input-group">
+                                    <label>Свес (м)</label>
+                                    <input
+                                        type="number"
+                                        step="0.1"
+                                        value={overhang}
+                                        onChange={(e) => setOverhang(parseFloat(e.target.value) || 0)}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="panel-section">
+                            <div className="panel-title">Стропильная система</div>
+                            <div className="input-group">
+                                <label>Шаг стропил (м)</label>
+                                <input
+                                    type="number"
+                                    step="0.1"
+                                    value={rafterSpacing}
+                                    onChange={(e) => setRafterSpacing(parseFloat(e.target.value) || 0.6)}
+                                />
+                            </div>
+                            <div className="input-row">
+                                <div className="input-group">
+                                    <label>Сечение доски (м)</label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={boardSection.w}
+                                        onChange={(e) => setBoardSection({...boardSection, w: parseFloat(e.target.value) || 0.15})}
+                                    />
+                                </div>
+                                <div className="input-group">
+                                    <label>Высота доски (м)</label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={boardSection.h}
+                                        onChange={(e) => setBoardSection({...boardSection, h: parseFloat(e.target.value) || 0.05})}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="panel-section">
+                            <div className="panel-title">Углы и размеры</div>
+                            <div className="results-box">
+                                <div className="result-item">
+                                    <span>Угол наклона:</span>
+                                    <span className="result-value">{angle}°</span>
+                                </div>
+                                <div className="result-item">
+                                    <span>Длина ската:</span>
+                                    <span className="result-value">{rafters.slopeLength.toFixed(2)} м</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="panel-section">
+                            <div className="panel-title">Расчет материалов</div>
+                            <div className="results-box">
+                                <div className="result-item">
+                                    <span>Площадь кровли:</span>
+                                    <span className="result-value">{roofArea.toFixed(2)} м²</span>
+                                </div>
+                                <div className="result-item">
+                                    <span>Листов металла (5м²):</span>
+                                    <span className="result-value">{Math.ceil(roofArea / 5)} шт</span>
+                                </div>
+                                <div className="result-item">
+                                    <span>Количество стропил:</span>
+                                    <span className="result-value">{rafters.count} шт</span>
+                                </div>
+                                <div className="result-item">
+                                    <span>Объем дерева:</span>
+                                    <span className="result-value">{rafters.volume.toFixed(3)} м³</span>
+                                </div>
+                            </div>
+
+                            <div className="formula">
+                                S = (W + 2×C) × Lската × 2<br/>
+                                Lската = √((D/2)² + H²)<br/>
+                                α = arctg(2H/D) = {angle}°
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // Main App - убран забор
+        const App = () => {
+            const [activeModule, setActiveModule] = useState('foundation');
+            const [foundationData, setFoundationData] = useState(null);
+
+            const modules = [
+                { id: 'foundation', name: 'Фундамент', icon: Icons.foundation, component: FoundationModule },
+                { id: 'walls', name: 'Стены', icon: Icons.walls, component: WallsModule },
+                { id: 'roof', name: 'Крыша', icon: Icons.roof, component: RoofModule }
+            ];
+
+            const ActiveComponent = modules.find(m => m.id === activeModule)?.component || FoundationModule;
+
+            return (
+                <div className="app-container">
+                    <nav className="sidebar">
+                        {modules.map(module => (
+                            <button
+                                key={module.id}
+                                className={`nav-button ${activeModule === module.id ? 'active' : ''}`}
+                                onClick={() => setActiveModule(module.id)}
+                                title={module.name}
+                            >
+                                <span className="nav-icon">{module.icon}</span>
+                                <span>{module.name}</span>
+                            </button>
+                        ))}
+                    </nav>
+
+                    <main className="main-content">
+                        <header className="header">
+                            <h1>СтройКальк Pro</h1>
+                            <div className="project-status">
+                                <div className="status-item">
+                                    <span className="status-dot"></span>
+                                    <span>Проект активен</span>
+                                </div>
+                                <div className="status-item">
+                                    <span>Фундамент: {foundationData ? '✓' : '—'}</span>
+                                </div>
+                            </div>
+                        </header>
+
+                        <ActiveComponent
+                            onUpdate={activeModule === 'foundation' ? setFoundationData : undefined}
+                            foundationData={foundationData}
+                        />
+                    </main>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
